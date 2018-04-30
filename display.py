@@ -20,7 +20,7 @@ def plot_tasks(tasks):
 
 
 class SchedulePlotter:
-    def __init__(self, schedule, max_x=100, max_y=100):
+    def __init__(self, schedule, num_tasks, max_x=100, max_y=100):
         self.schedule = schedule
         self.max_x = max_x
         self.max_y = max_y
@@ -28,28 +28,35 @@ class SchedulePlotter:
         self.window = GraphWin(width=800, height=600)
         self.window.setCoords(0, 0, self.max_x, self.max_y)
         self.margin = 4
+        self.num_tasks = num_tasks
 
     def _get_schedule_interval(self):
-        self.schedule.sort(key=lambda x: x.task.b)
-        max_time = self.schedule[-1].start + self.schedule[-1].duration
-
+        self.schedule.sort(key=lambda x: x.start)
+        max_time = self.schedule[-1].task.b
         min_time = self.schedule[0].start
         self.schedule_start = min_time
         self.schedule_end = max_time
 
     def draw_schedule(self):
         x_axis = Line(Point(self.margin, self.margin), Point(self.max_x - self.margin, self.margin))
-        y_axis = Line(Point(self.margin, self.margin), Point(self.margin, self.max_y- self.margin))
+        y_axis = Line(Point(self.margin, self.margin), Point(self.margin, self.max_y - self.margin))
 
         interval = (self.max_x - 2*self.margin) / self.schedule_end
-        spacing = self.max_x / len(self.schedule)
+        spacing = self.max_x / self.num_tasks
 
-        for z in range(0, ceil(self.schedule_end) + 1, 5000):
+        for z in range(0, ceil(self.schedule_end) + 1, 5):
             pa = Point((z * interval) + self.margin, self.margin-1.5)
             tick_label = Text(pa, str(z))
             tick_label.draw(self.window)
 
-        for i, sb in enumerate(sorted(self.schedule, key=lambda x: x.task.name, reverse=True)):
+        i = 0
+        self.schedule.sort(key=lambda x: x.task.name, reverse=True)
+        last_block = self.schedule[0].task.name
+
+        for sb in self.schedule:
+            if sb.task.name != last_block:
+                i += 1
+                last_block = sb.task.name
             deadline = sb.task.b
             release = sb.task.a
             dla = Point((deadline * interval) + self.margin, i * spacing + self.margin)
@@ -58,6 +65,7 @@ class SchedulePlotter:
             rb = Point((release * interval) + self.margin, (i * spacing) + (spacing / self.margin) + self.margin)
 
             release_l = Line(ra, rb)
+            color_rgb(0, 0, 255)
             release_l.setFill('green')
             release_l.setArrow('last')
             release_l.draw(self.window)
@@ -71,6 +79,8 @@ class SchedulePlotter:
             bl = Point(self.margin + (sb.start * interval), i * spacing + self.margin)
             ur = Point(self.margin + ((sb.start * interval) + (sb.duration * interval)), (i * spacing) + (spacing / self.margin) + self.margin)
             rect = Rectangle(bl, ur)
+            rect_color = color_rgb(int(255 * sb.execution_speed), int(255 * (1 - sb.execution_speed)), 0)
+            rect.setFill(rect_color)
             rect.draw(self.window)
             l = Line(Point(self.margin, i * spacing + self.margin), Point(self.max_x - 1, i * spacing + self.margin))
             l.draw(self.window)
@@ -80,7 +90,7 @@ class SchedulePlotter:
 
 
 if __name__ == "__main__":
-    tasks = load_tasks("input.txt")
+    tasks, num_tasks = load_tasks("testcases/cheng.txt")
     a, b = task_set_interval(tasks)
 
     s = schedule(tasks)
@@ -90,5 +100,5 @@ if __name__ == "__main__":
                                                                   t.start,
                                                                   t.duration,
                                                                   t.execution_speed * 100))
-    plotter = SchedulePlotter(s)
+    plotter = SchedulePlotter(s, num_tasks)
     plotter.draw_schedule()
