@@ -1,5 +1,6 @@
+import argparse
 from graphics import *
-from main import load_tasks, schedule, task_set_interval
+from scheduler import load_tasks, schedule, task_set_interval
 from math import ceil
 
 
@@ -44,7 +45,9 @@ class SchedulePlotter:
         interval = (self.max_x - 2*self.margin) / self.schedule_end
         spacing = self.max_x / self.num_tasks
 
-        for z in range(0, ceil(self.schedule_end) + 1, 5):
+        step = int(self.schedule_end / 5)
+
+        for z in range(0, int(ceil(self.schedule_end)) + 1, step):
             pa = Point((z * interval) + self.margin, self.margin-1.5)
             tick_label = Text(pa, str(z))
             tick_label.draw(self.window)
@@ -70,7 +73,7 @@ class SchedulePlotter:
             release_l.setArrow('last')
             release_l.draw(self.window)
             deadline_l = Line(dla, dlb)
-            deadline_l.setFill('red')
+            deadline_l.setFill('black')
             deadline_l.setArrow('first')
             deadline_l.draw(self.window)
 
@@ -90,7 +93,10 @@ class SchedulePlotter:
 
 
 if __name__ == "__main__":
-    tasks, num_tasks = load_tasks("testcases/cheng.txt")
+    parser = argparse.ArgumentParser(description="Simulation of a low power scheduling algorithm.")
+    parser.add_argument('filename', type=str, help='Name of input file')
+    args = parser.parse_args()
+    tasks, num_tasks = load_tasks(args.filename)
     a, b = task_set_interval(tasks)
 
     s = schedule(tasks)

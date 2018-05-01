@@ -1,3 +1,5 @@
+from __future__ import division
+
 import re
 from math import floor, ceil
 
@@ -31,6 +33,9 @@ class SchedulingBlock:
 
 
 def load_tasks(filename):
+    """
+    Loads tasks from the given file.
+    """
     tasks = []
     file = open(filename, "r")
     lines = file.readlines()
@@ -63,7 +68,10 @@ def tasks_in_interval(a, b, tasks):
 
 
 # O(n^2) algorithm for finding critical group
-def find_critical_group(task_set, time):
+def find_critical_group(task_set):
+    """
+    Finds the critical group for a given task set.
+    """
     isets = []
 
     a_vals = [ti.a for ti in task_set]
@@ -84,8 +92,6 @@ def find_critical_group(task_set, time):
                 if max_g <= g_val <= 1:
                     max_g = g_val
                     max_idx = i
-                # print("{0} \t{1} \t{2:.2f}".format(a, b, g_val), end=" ")
-                # print(iset)
                 i += 1
                 isets.append(iset)
     return max_g, set(isets[max_idx])
@@ -99,7 +105,20 @@ def get_earliest_deadline(task_set):
     return min(task_set, key=lambda x: x.b)
 
 
+def is_schedulable(task_set):
+    a, b = task_set_interval(task_set)
+    total_computation_time = sum(task.r for task in task_set)
+
+    if total_computation_time > (b - a):
+        return False
+
+    return True
+
+
 def edf(task_set, g):
+    """
+    EDF schedule the given task set.
+    """
     f_schedule = []
     task_set = set(list(task_set))
 
@@ -125,46 +144,45 @@ def edf(task_set, g):
 
 
 def schedule(initial_task_set):
-
+    """
+    Main scheduling algorithm.
+    """
     f_schedule = []
-    time = 0
 
-    total = 0
     task_set = set(initial_task_set)
 
     # While the original task set still has members
     while task_set:
         # Find the critical group of tasks
-        g, critical_group = find_critical_group(task_set, time)
+        g, critical_group = find_critical_group(task_set)
         a, b = task_set_interval(critical_group)
         print("#" * 20)
         print("Critical Group {} \t{}\n".format(g, critical_group))
-        #total += sum(task.r/g for task in critical_group)
+        # total += sum(task.r/g for task in critical_group)
+
+        if not is_schedulable(critical_group):
+            print("Error: Task(s) {} is/are unschedulable".format(critical_group))
+            exit()
 
         # Remove the critical group from the original set
         task_set -= critical_group
 
+        # Schedule the tasks in the critical group
         sched = edf(critical_group, g)
         f_schedule += sched
+
         # Revise deadlines and arrival times for remaining tasks
         for t in task_set:
-            if a <= t.b <= b:
+            if t.b > a and t.b <= b:
                 t.b = a
-            elif t.b > b:
-                 t.a = b
-            if a <= t.a <= b:
+            elif t.a < b and t.a >= a:
                 t.a = b
-            elif t.a > b:
-                 t.a -= (b-a)
-
-
-        print(task_set)
+            elif a > t.a and b < t.b:
+                i1 = a - t.a
+                i2 = t.b - b
+                if i1 <= i2:
+                    t.a = b
+                else:
+                    t.b = a
+    # Return a list of scheduling blocks
     return f_schedule
-
-
-if __name__ == "__main__":
-    taskset = load_tasks("cheng.txt")
-    schedule = schedule(taskset)
-    for t in schedule:
-        task, start, duration, g = t
-        print("Schedule task {0} at time {1:.2f} for {2:.2f} time units with {3:.2f}% processing speed".format(task.name, start, duration, g*100))
