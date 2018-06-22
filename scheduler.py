@@ -1,7 +1,7 @@
 from __future__ import division
 
 import re
-from math import floor, ceil
+from math import floor
 
 
 class Task:
@@ -77,8 +77,6 @@ def find_critical_group(task_set):
     a_vals = [ti.a for ti in task_set]
     b_vals = [ti.b for ti in task_set]
 
-    a_vals.sort()
-    b_vals.sort()
     max_idx = 0
     max_g = 0
     i = 0
@@ -109,10 +107,7 @@ def is_schedulable(task_set):
     a, b = task_set_interval(task_set)
     total_computation_time = sum(task.r for task in task_set)
 
-    if total_computation_time > (b - a):
-        return False
-
-    return True
+    return not total_computation_time > (b - a)
 
 
 def edf(task_set, g):
